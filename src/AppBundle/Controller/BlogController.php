@@ -34,12 +34,18 @@ class BlogController extends Controller
 
     /**
      * @Route("/{id}", name="blog_article")
-     * @Method({"GET", "PUT"})
+     * @Method({"GET", "PUT", "DELETE"})
      */
     public function articleAction(Request $request, Article $article)
     {
         if ($request->getMethod() == 'PUT') {
             return $this->postArticle($request, $article);
+        }
+        if ($request->getMethod() == 'DELETE') {
+            $em = $this->getDoctrine()->getManager();
+            $em->remove($article);
+            $em->flush();
+            return new JsonResponse('deleted');
         }
         return new JsonResponse($this->showArticle($article));
     }
@@ -79,7 +85,7 @@ class BlogController extends Controller
             $em->flush();
 
             return new JsonResponse(
-                $existing ? 'updated' : 'created',
+                $this->showArticle($article),
                 $existing ? Response::HTTP_OK : Response::HTTP_CREATED,
                 [
                     'Location' => $this->articleUrl($article)
