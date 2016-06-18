@@ -26,6 +26,9 @@ things to do:
   * test in narrow screen and add design for mobile version
   * authorization token, for example, using OAuth
   * write unit tests for backend and client-side covering important logic
+  * error handling
+  * load 3rd party modules with bower or npm
+  * js(x) preprocess
    
 
 INSTALLATION:

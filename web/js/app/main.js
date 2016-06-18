@@ -12,92 +12,89 @@ define(
                     success: success
                 });
             },
-            save = function (url, elements) {
-                return function () {
-                    $.ajax(url, {
-                        method: url === rootUrl ? 'POST' : 'PUT',
-                        dataType: 'json',
-                        data: JSON.stringify({title: elements.title.val(), body: elements.body.val()}),
-                        success: function (data) {
-                            showArticle(data.url)();
-                            load(rootUrl, showBlog);
-                        }
-                    });
-                }
+            saveArticle = function (url, data, success) {
+                $.ajax(url, {
+                    method: url === rootUrl ? 'POST' : 'PUT',
+                    dataType: 'json',
+                    data: JSON.stringify(data),
+                    success: success
+                });
             },
-            edit = function (url) {
-                return function () {
-                    var success = function (data) {
-                        var elements = {
-                            title: $('<input>')
-                                .addClass('form-control')
-                                .attr({placeholder: 'title', required: true, autofocus: true})
-                                .val(data.title),
-                            body: $('<textarea>')
-                                .addClass('form-control')
-                                .attr({placeholder: 'body', required: true, autofocus: true}).
-                                text(data.body)};
-                        $container.text('')
-                            .append($('<form>')
-                                .append(elements.title)
-                                .append(elements.body)
-                                .append($('<input>')
-                                    .addClass(btnClass)
-                                    .attr('type', 'submit')
-                                    .val('save'))
-                                .submit(save(url, elements))
-                            );
-                    };
-                    if (url === '/blog') {
-                        success({title: '', body: ''});
-                        return;
-                    }
-                    load(url, success);
-                };
+            viewEditArticle = function (data) {
+                var elements = {
+                    title: $('<input>')
+                        .addClass('form-control')
+                        .attr({placeholder: 'title', required: true, autofocus: true})
+                        .val(data.title),
+                    body: $('<textarea>')
+                        .addClass('form-control')
+                        .attr({placeholder: 'body', required: true, autofocus: true}).
+                        text(data.body)};
+                $container.text('')
+                    .append($('<form>')
+                        .append(elements.title)
+                        .append(elements.body)
+                        .append($('<input>')
+                            .addClass(btnClass)
+                            .attr('type', 'submit')
+                            .val('save'))
+                        .submit(function () {
+                            saveArticle(data.url, {title: elements.title.val(), body: elements.body.val()}, function (data) {
+                                loadArticle(data.url, viewArticle)();
+                                load(rootUrl, showBlog);
+                            });
+                        })
+                    );
             },
-            removeArticle = function (url) {
+            removeArticle = function (url, success) {
                 return function () {
                     $.ajax(url, {
                         method: 'DELETE',
-                        success: function () {
-                            edit(rootUrl)();
-                            load(rootUrl, showBlog);
-                        }
+                        success: success
                     });
-                }
+                };
             },
-            showArticle = function (url) {
+            viewArticle = function (data) {
+                $container.text('')
+                    .append($('<h1>').text(data.title))
+                    .append($('<a/>').addClass(btnClass).text('edit').click(loadArticle(data.url, viewEditArticle)))
+                    .append($('<a/>').addClass(btnClass).text('delete').click(removeArticle(data.url, function () {
+                        $container.text('');
+                        load(rootUrl, showBlog);
+                    })))
+                    .append($('<div>').text(data.body))
+                ;
+            },
+            loadArticle = function (url, callback) {
                 return function () {
                     if (navigation.currentUrl() != url) {
                         navigation.navigate(url);
                     }
-                    load(url, function (data) {
-                        $container.text('')
-                            .append($('<h1>').text(data.title))
-                            .append($('<a/>').addClass(btnClass).text('edit').click(edit(url)))
-                            .append($('<a/>').addClass(btnClass).text('delete').click(removeArticle(url)))
-                            .append($('<div>').text(data.body))
-                        ;
-                    });
+                    if (url === rootUrl) {
+                        return callback({url: url, title: '', body: ''});
+                    }
+                    load(url, callback);
                 };
             },
             showBlog = function (data) {
                 $list.empty();
                 $list.append($('<li/>').addClass(liClass)
-                    .append($('<a>').click(edit(rootUrl)).text('new article')));
+                    .append($('<a>').click(loadArticle(rootUrl, viewEditArticle)).text('new article')));
                 $list.append(data.map(function (article) {
                     return $('<li/>').addClass(liClass)
                         .append($('<span>').text(article.created))
-                        .append($('<a>').click(showArticle(article.url)).text(article.title));
+                        .append($('<a>').click(loadArticle(article.url, viewArticle)).text(article.title));
                 }));
             };
         $(function () {
             load(rootUrl, showBlog);
             if (navigation.currentUrl()) {
-                showArticle(navigation.currentUrl())();
+                var url = navigation.currentUrl();
+                loadArticle(url, url === rootUrl ? viewEditArticle : viewArticle)();
             }
             navigation.subscribe2url(function() {
-                showArticle(navigation.currentUrl())();
+                var url = navigation.currentUrl();
+                loadArticle(url, url === rootUrl ? viewEditArticle : viewArticle)();
             });
         });
     }
