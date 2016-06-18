@@ -1,8 +1,12 @@
 define(
     ['jquery'],
     function ($) {
-        return function ($list, $container, liClass, rootUrl, btnClass, load, saveArticle, removeArticle, loadArticle) {
+        return function ($list, $container, liClass, rootUrl, btnClass, Controller) {
             var
+                load = Controller.load,
+                saveArticle = Controller.saveArticle,
+                removeArticle = Controller.removeArticle,
+                loadArticle = Controller.loadArticle,
                 editArticle = function (data) {
                     var elements = {
                         title: $('<input>')
